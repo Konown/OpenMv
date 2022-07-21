@@ -149,9 +149,15 @@ def Receive_Prepare(data):
         R.state = 3
         R.uart_buf.append(data)
     elif R.state == 3:  # 有效数据长度
-        R.state = 4
         R.uart_buf.append(data)
         R.data_len = data
+        if 0 < R.data_len <= 0x14:
+            R.state = 4
+        elif R.data_len == 0:
+            R.state = 5
+        else:
+            R.state = 0
+            R.uart_buf = []
     elif R.state == 4:
         if R.data_len > 0:
             R.data_len -= 1
