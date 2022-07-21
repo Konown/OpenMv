@@ -131,7 +131,7 @@ def Receive_Analysis(data_buf, lens):
         if data_buf[4] == 0x01:
             globalvar.ctr.work_mode = globalvar.Color_Red
         # 设置为寻找绿色
-        elif data_buf[4] == 0x10:
+        elif data_buf[4] == 0x02:
             globalvar.ctr.work_mode = globalvar.Color_Green
 
     send_ack(globalvar.CHECK_ACK)
@@ -149,15 +149,9 @@ def Receive_Prepare(data):
         R.state = 3
         R.uart_buf.append(data)
     elif R.state == 3:  # 有效数据长度
+        R.state = 4
         R.uart_buf.append(data)
         R.data_len = data
-        if 0 < R.data_len <= 0x14:
-            R.state = 4
-        elif R.data_len == 0:
-            R.state = 5
-        else:
-            R.state = 0
-            R.uart_buf = []
     elif R.state == 4:
         if R.data_len > 0:
             R.data_len -= 1
@@ -181,6 +175,4 @@ def uart_read_buf():
     while i < buf_size:
         Receive_Prepare(uart.readchar())
         i += 1
-
-
 

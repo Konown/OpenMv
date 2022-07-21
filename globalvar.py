@@ -19,7 +19,7 @@ Receive_mode_Exposure = 0xd1
 
 Receive_mode_SetColor = 0xd2
 Color_Red = 0x01
-Color_Green = 0x10
+Color_Green = 0x02
 
 
 fps_cnt = 0
@@ -28,7 +28,7 @@ show_fps_set = 15
 
 
 class Ctrl(object):
-    work_mode = CHECK_VerLine  # 工作模式
+    work_mode = 0x03  # 工作模式
     check_show = 0  # 开显示，在线调试时可以打开，脱机使用请关闭，可提高计算速度
     isGrayscale = False  # True 灰度模式
     thresholds = [0, 90]  # 默认追踪黑色
