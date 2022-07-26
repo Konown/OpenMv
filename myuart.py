@@ -93,6 +93,17 @@ def int8(byte):
         return byte
 
 
+# 阈值读取处理
+def receive_threshold(f):
+    i = 0
+    thresholds = [0]*6
+    line = f.readline().strip().strip('[]').split(',')
+    for n in line:
+        thresholds[i] = int(n)
+        i += 1
+    return tuple(thresholds)
+
+
 # 串口通信协议处理
 def Receive_Analysis(data_buf, lens):
     # 不进位和校验
@@ -105,27 +116,30 @@ def Receive_Analysis(data_buf, lens):
     if sum != data_buf[lens - 1]:
         return
 
-    # 设置工作模式
-    if data_buf[2] == 0xA1:
-        globalvar.ctr.work_mode = data_buf[4]
-    # 设置像素模式为灰度模式
-    elif data_buf[2] == 0xA2:
-        globalvar.ctr.isGrayscale = True
-        sensor.set_pixformat(sensor.GRAYSCALE)
-        globalvar.ctr.thresholds = [0, 90]
-        # 设置像素模式为RGB模式
+    # 设置色彩模式
+    if data_buf[2] == globalvar.Receive_mode_Setpixformat:
+        if data_buf[4] == globalvar.Pix_RGB:
+            sensor.reset()
+            sensor.set_framesize(sensor.QVGA)  # 320*240
+            sensor.set_pixformat(sensor.RGB565)
+            sensor.skip_frames(time=2000)
+            sensor.set_auto_gain(False)  # must be turned off for color tracking
+            sensor.set_auto_whitebal(False)  # must be turned off for color tracking
+        elif data_buf[4] == globalvar.Pix_Gray:
+            sensor.reset()
+            sensor.set_framesize(sensor.QVGA)  # 320*240
+            sensor.set_pixformat(sensor.GRAYSCALE)
+            sensor.skip_frames(time=2000)
+            sensor.set_auto_gain(False)  # must be turned off for color tracking
+            sensor.set_auto_whitebal(False)  # must be turned off for
 
-    elif data_buf[2] == 0xA3:
-        globalvar.ctr.isGrayscale = False
-        sensor.set_pixformat(sensor.RGB565)
-        globalvar.ctr.thresholds = [int8(data_buf[4]), int8(data_buf[5]), int8(data_buf[6]), int8(data_buf[7]),
-                               int8(data_buf[8]), int8(data_buf[9])]
     # 设置曝光度
     elif data_buf[2] == globalvar.Receive_mode_Exposure:
         globalvar.ctr.work_mode = globalvar.Receive_mode_Exposure
         if data_buf[4] == 0x01:
             sensor.set_auto_exposure(True)
 
+    # 设置追踪颜色
     elif data_buf[2] == globalvar.Receive_mode_SetColor:
         # 设置为寻找红色
         if data_buf[4] == 0x01:
@@ -134,11 +148,27 @@ def Receive_Analysis(data_buf, lens):
         elif data_buf[4] == 0x02:
             globalvar.ctr.work_mode = globalvar.Color_Green
 
+    # 进入阈值调试模式
+    elif data_buf[2] == globalvar.Receive_Thresh_Debugger:
+        globalvar.flag_thresh_debugger = 1
+
+    elif data_buf[2] == globalvar.Receive_Set_RGB_Thresh:
+        try:
+            if data_buf[4] == 0x01: # 红色阈值
+                with open("color1.txt", "r") as f:
+                    globalvar.red_threshold = receive_threshold(f)
+                print(globalvar.red_threshold)
+        except Exception as e:
+            print(e)
+            pass
+
+    globalvar.ctr.work_mode = data_buf[2]
     send_ack(globalvar.CHECK_ACK)
 
 
 # 串口通信协议接收
 def Receive_Prepare(data):
+    print(data)
     if R.state == 0 and data == SEND_Start1:
         R.state = 1
         R.uart_buf.append(data)

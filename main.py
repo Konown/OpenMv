@@ -7,6 +7,7 @@ import myLine
 import myuart
 import globalvar
 import GeometryFeature
+import Threshold_Debugger as TD
 
 SSID ='OPENMV1'    # Network SSID
 KEY  ='1234567890'    # Network key (must be 10 chars)
@@ -20,8 +21,11 @@ sensor.skip_frames(time = 2000)
 sensor.set_auto_gain(False) # must be turned off for color tracking
 sensor.set_auto_whitebal(False) # must be turned off for color tracking
 
-wlan = network.WINC(mode=network.WINC.MODE_AP)
-wlan.start_ap(SSID, key=KEY, security=wlan.WEP, channel=2)
+try:
+    wlan = network.WINC(mode=network.WINC.MODE_AP)
+    wlan.start_ap(SSID, key=KEY, security=wlan.WEP, channel=2)
+except Exception as e:
+    pass
 
 clock = time.clock()
 
@@ -48,13 +52,6 @@ def start_streaming(s):
                 "Content-Type: multipart/x-mixed-replace;boundary=openmv\r\n" \
                 "Cache-Control: no-cache\r\n" \
                 "Pragma: no-cache\r\n\r\n")
-    sensor.reset()
-    sensor.set_framesize(sensor.QVGA)  # 320*240
-    sensor.set_pixformat(sensor.RGB565)
-    sensor.skip_frames(time = 2000)
-    sensor.set_auto_gain(False) # must be turned off for color tracking
-    sensor.set_auto_whitebal(False) # must be turned off for color tracking
-
     while True:
         clock.tick()
         myuart.uart_read_buf()
@@ -118,12 +115,7 @@ while True:
     if dt>=10:
         break
 
-sensor.reset()                      # Reset and initialize the sensor.
-sensor.set_pixformat(sensor.RGB565) # Set pixel format to RGB565 (or GRAYSCALE)
-sensor.set_framesize(sensor.QVGA)   # Set frame size to QVGA (320x240)
-sensor.skip_frames(time = 2000)     # Wait for settings take effect.
-sensor.set_auto_gain(False) # must be turned off for color tracking
-sensor.set_auto_whitebal(False) # must be turned off for color tracking
+
 while True:
     clock.tick()
     myuart.uart_read_buf()
@@ -156,3 +148,5 @@ while True:
     if uart_send == 0:
         myuart.send_online(globalvar.CHECK_Online)
 
+    if globalvar.flag_thresh_debugger:
+        TD.Threshold_Debugger()
