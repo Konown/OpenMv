@@ -1,5 +1,12 @@
 import image
+
 import globalvar
+
+NONE = 0xc0  # 192
+IS_Left = 0xc1  # 193
+IS_Right = 0xc2  # 194
+IS_T = 0xc3  # 195
+IS_Cross = 0xc4  # 196
 
 imgWidth = 320
 imgHeight = 240
@@ -85,7 +92,7 @@ def calculate_intersection(line1, line2):
     return None
 
 
-def find_blobs_in_rois(img, line_color, is_debug=True):
+def find_blobs_in_rois(img, line_color, is_debug=False):
     globalvar.FLAG_VerLine = 0
     globalvar.FLAG_AcrLine = 0
 
@@ -105,8 +112,8 @@ def find_blobs_in_rois(img, line_color, is_debug=True):
         x, y, width, height = largest_blob[:4]
 
         # 根据色块的宽度进行过滤
-        if not (25 <= width <= 75 and 18 <= height <= 56):
-            continue
+        #if not (5 <= width <= 150 and 10 <= height <= 75):
+            #continue
 
         roi_blobs_result[roi_direct]['cx'] = x
         roi_blobs_result[roi_direct]['cy'] = y
@@ -115,9 +122,9 @@ def find_blobs_in_rois(img, line_color, is_debug=True):
         if is_debug:
             img.draw_rectangle(x, y, width, height)
 
-    if roi_blobs_result[0]['blob_flag'] and roi_blobs_result[1]['blob_flag'] and roi_blobs_result[2]['blob_flag']:
+    if roi_blobs_result['down']['blob_flag'] and roi_blobs_result['middle']['blob_flag'] and roi_blobs_result['up']['blob_flag']:
         globalvar.FLAG_VerLine = 1
-    if roi_blobs_result[3]['blob_flag'] and roi_blobs_result[4]['blob_flag']:
+    if roi_blobs_result['right']['blob_flag']:
         globalvar.FLAG_AcrLine = 1
 
     return roi_blobs_result
@@ -140,26 +147,26 @@ def check_geometry(img, lines, line_color, show=False):
 
     result = find_blobs_in_rois(img, line_color, is_debug=True)
 
-    globalvar.geometry_type = globalvar.NONE
+    geometry_type = NONE
     if (not result['up']['blob_flag']) and result['down']['blob_flag']:
         if result['left']['blob_flag'] and (not result['right']['blob_flag']):
-            globalvar.geometry_type = globalvar.IS_Left
+            geometry_type = IS_Left
         elif result['right']['blob_flag'] and (not result['left']['blob_flag']):
-            globalvar.geometry_type = globalvar.IS_Right
+            geometry_type = IS_Right
 
-    if globalvar.geometry_type == globalvar.NONE:
+    if geometry_type == NONE:
         cnt = 0
         for roi_direct in ['up', 'down', 'left', 'right']:
             if result[roi_direct]['blob_flag']:
                 cnt += 1
         if cnt == 3:
-            globalvar.geometry_type = globalvar.IS_T
+            geometry_type = IS_T
         elif cnt == 4:
-            globalvar.geometry_type = globalvar.IS_Cross
+            geometry_type = IS_Cross
 
     cx = 0
     cy = 0
-    if globalvar.geometry_type == globalvar.IS_T or globalvar.geometry_type == globalvar.IS_Cross:
+    if geometry_type == IS_T or geometry_type == IS_Cross:
         cnt = 0
         for roi_direct in ['up', 'down']:
             if result[roi_direct]['blob_flag']:
@@ -181,7 +188,7 @@ def check_geometry(img, lines, line_color, show=False):
             cy /= cnt
 
     if show:
-        visualize_result(img, lines, globalvar.geometry_type)
+        visualize_result(img, lines, geometry_type)
 
     last_cx = cx
     last_cy = cy
@@ -192,38 +199,15 @@ def visualize_result(img, lines, geometry_type):
     for l in lines:
         img.draw_line(l.line(), color=(255, 255, 0), thickness=5)
 
-    if globalvar.geometry_type == globalvar.NONE:
+    if geometry_type == NONE:
         print('不是特殊性状')
-    elif globalvar.geometry_type == globalvar.IS_Left:
+    elif geometry_type == IS_Left:
         print('左直角')
-    elif globalvar.geometry_type == globalvar.IS_Right:
+    elif geometry_type == IS_Right:
         print('右直角')
-    elif globalvar.geometry_type == globalvar.IS_T:
+    elif geometry_type == IS_T:
         print('T字形')
-    elif globalvar.geometry_type == globalvar.IS_Cross:
+    elif geometry_type == IS_Cross:
         print('十字形')
 
-
-verticle_pixels_threshold = [200, 300]   #像素最大和最小阈值
-track_line_threshold = [100, 200]
-
-
-def count_pixels_with_movement(img):
-    global x_width, y_height
-
-    x_pos = 0
-    y_pos = 0
-    total_white_pixels = 0
-    for x_pos in range(x_width):
-        for y_pos in range(y_height):
-            if img.get_pixel(x_pos, y_pos) == 255:
-                total_white_pixels += 1  # 利用get_pixel()方法，计算当前图像中白色色块所占的像素大小
-
-    print("total white pixels are", total_white_pixels)
-    if total_white_pixels >= verticle_pixels_threshold[0] and total_white_pixels <= verticle_pixels_threshold[1]:
-        globalvar.geometry_type = globalvar.IS_Cross
-    elif total_white_pixels >= track_line_threshold[0] and total_white_pixels <= track_line_threshold[1]:
-        globalvar.geometry_type = globalvar.IS_T
-    else:
-        globalvar.geometry_type = globalvar.NONE
 

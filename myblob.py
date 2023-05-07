@@ -50,7 +50,7 @@ def My_find_blobs(img, threshold, Limit_area, Limit_pixels, isBinary=False, show
                                merge=False)
     else:
         img.mean(1)
-        blobs = img.find_blobs([threshold], area_threshold=Limit_area, pixels_threshold=Limit_pixels,
+        blobs = img.find_blobs([threshold], roi=[0, 0, 320, 120], area_threshold=Limit_area, pixels_threshold=Limit_pixels,
                                merge=False)
 
     if blobs:
@@ -59,8 +59,8 @@ def My_find_blobs(img, threshold, Limit_area, Limit_pixels, isBinary=False, show
         center_y = largest_blob[6]
         print("pixels", largest_blob.pixels())
         print("area", largest_blob.area())
-        if show:
-            img.draw_cross(center_x, center_y, thickness=3, color=(0, 0, 0))
+        #if show:
+            #img.draw_cross(center_x, center_y, thickness=3, color=(0, 0, 0))
             #img.draw_rectangle(largest_blob.rect(), thickness=3)
         return largest_blob
 
